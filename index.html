@@ -2,16 +2,16 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Call</title>
+<title>Family Call</title>
 </head>
 <body>
-<h2>📞 Call</h2>
+<h2>📞 Family Call</h2>
 
 <label>
   Who are you?
   <select id="role">
-    <option value="son">FIRST PERSON</option>
-    <option value="dad">SECOND PERSON</option>
+    <option value="son">I am Charlie (Son)</option>
+    <option value="dad">I am Dad</option>
   </select>
 </label>
 
@@ -28,8 +28,8 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
 <script>
-const FIRST_ID = "9605009922";
-const SECOND_ID = "7510112953";
+const SON_ID = "987654";
+const DAD_ID = "123456";
 
 const role = document.getElementById("role");
 const myIdSpan = document.getElementById("my-id");
@@ -45,11 +45,11 @@ let peer, localStream, currentCall, speakerOn = true;
 // Setup IDs when role changes
 function updateIDs() {
   if (role.value === "son") {
-    myIdSpan.textContent = FIRST_ID;
-    otherIdSpan.textContent = SECOND_ID;
+    myIdSpan.textContent = SON_ID;
+    otherIdSpan.textContent = DAD_ID;
   } else {
-    myIdSpan.textContent = FIRST_ID;
-    otherIdSpan.textContent = SECOND_ID;
+    myIdSpan.textContent = DAD_ID;
+    otherIdSpan.textContent = SON_ID;
   }
 }
 
