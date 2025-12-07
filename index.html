@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Call Dad</title>
+</head>
+<body>
+  <h2>📞 Dad Call (Demo)</h2>
+
+  <p>Your ID: <span id="my-id">Loading...</span></p>
+
+  <label>
+    Other person ID:
+    <input id="other-id" placeholder="Enter Dad's ID">
+  </label>
+  <button id="call-btn">Call</button>
+
+  <h3>Status: <span id="status">Not connected</span></h3>
+
+  <!-- We don't need video elements, only audio -->
+  <audio id="remote-audio" autoplay></audio>
+
+  <!-- PeerJS CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
+  <script>
+    const myIdSpan = document.getElementById('my-id');
+    const statusSpan = document.getElementById('status');
+    const otherIdInput = document.getElementById('other-id');
+    const callBtn = document.getElementById('call-btn');
+    const remoteAudio = document.getElementById('remote-audio');
+
+    // 1) Create Peer (uses free PeerJS cloud server)
+    const peer = new Peer(); // random ID
+
+    peer.on('open', (id) => {
+      myIdSpan.textContent = id;
+      console.log('My ID:', id);
+    });
+
+    // 2) Handle incoming call (when Dad calls you)
+    peer.on('call', async (call) => {
+      statusSpan.textContent = 'Incoming call... answering';
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        call.answer(stream); // send your mic audio
+
+        call.on('stream', (remoteStream) => {
+          remoteAudio.srcObject = remoteStream; // play Dad's audio
+          statusSpan.textContent = 'In call';
+        });
+
+        call.on('close', () => {
+          statusSpan.textContent = 'Call ended';
+        });
+      } catch (err) {
+        console.error(err);
+        statusSpan.textContent = 'Mic permission denied';
+      }
+    });
+
+    // 3) Start call when you press button
+    callBtn.onclick = async () => {
+      const otherId = otherIdInput.value.trim();
+      if (!otherId) {
+        alert('Enter Dad\'s ID first!');
+        return;
+      }
+
+      statusSpan.textContent = 'Calling ' + otherId + ' ...';
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        const call = peer.call(otherId, stream); // start call
+
+        call.on('stream', (remoteStream) => {
+          remoteAudio.srcObject = remoteStream; // play Dad's audio
+          statusSpan.textContent = 'In call';
+        });
+
+        call.on('close', () => {
+          statusSpan.textContent = 'Call ended';
+        });
+      } catch (err) {
+        console.error(err);
+        statusSpan.textContent = 'Mic permission denied / error';
+      }
+    };
+
+    peer.on('error', (err) => {
+      console.error(err);
+      statusSpan.textContent = 'Error: ' + err.type;
+    });
+  </script>
+</body>
+</html>
