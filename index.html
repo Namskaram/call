@@ -5,88 +5,113 @@
   <title>Simple Call</title>
 </head>
 <body>
-  <h2>📞 Simple Call Demo</h2>
+  <h2>📞 Simple Call</h2>
 
-  <p>Your ID (fixed): <span id="my-id"></span></p>
+  <!-- YOUR ID -->
+  <label>
+    Your ID:
+    <input id="my-id-input" placeholder="Enter your ID">
+  </label>
+  <button id="set-id-btn">✔ Apply ID</button>
 
+  <p>Current ID: <span id="my-id">Not set</span></p>
+
+  <hr>
+
+  <!-- OTHER ID -->
   <label>
     Other person ID:
     <input id="other-id" placeholder="Enter other ID">
   </label>
+
   <br><br>
 
-  <button id="call-btn">📞 Call</button>
+  <!-- ACTION BUTTONS -->
+  <button id="call-btn" disabled>📞 Call</button>
   <button id="hang-btn" disabled>🟥 Hang Up</button>
   <button id="speaker-btn" disabled>🔊 Speaker: ON</button>
 
-  <h3>Status: <span id="status">Starting…</span></h3>
+  <h3>Status: <span id="status">ID not set</span></h3>
 
   <audio id="remote-audio" autoplay></audio>
 
   <!-- PeerJS CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
   <script>
-    // 🔴 CHANGE THIS FOR EACH DEVICE 🔴
-    // Example:
-    //  - On your phone:  const MY_ID = "person-001"
-    //  - On dad's phone: const MY_ID = "person-002"
-    const MY_ID = "person-001"; // <-- set this per device
-
-    const myIdSpan    = document.getElementById('my-id');
-    const otherIdInput = document.getElementById('other-id');
-    const statusSpan  = document.getElementById('status');
-    const callBtn     = document.getElementById('call-btn');
-    const hangBtn     = document.getElementById('hang-btn');
-    const speakerBtn  = document.getElementById('speaker-btn');
-    const remoteAudio = document.getElementById('remote-audio');
-
+    let peer = null;
     let localStream = null;
     let currentCall = null;
-    let speakerOn   = true;
+    let speakerOn = true;
 
-    // Show fixed ID
-    myIdSpan.textContent = MY_ID;
+    const myIdSpan = document.getElementById("my-id");
+    const statusSpan = document.getElementById("status");
+    const myIdInput = document.getElementById("my-id-input");
+    const setIdBtn = document.getElementById("set-id-btn");
 
-    // Create peer with CONSTANT ID
-    const peer = new Peer(MY_ID);
+    const otherIdInput = document.getElementById("other-id");
+    const callBtn = document.getElementById("call-btn");
+    const hangBtn = document.getElementById("hang-btn");
+    const speakerBtn = document.getElementById("speaker-btn");
+    const remoteAudio = document.getElementById("remote-audio");
 
-    peer.on('open', (id) => {
-      console.log('My ID:', id);
-      statusSpan.textContent = 'Ready';
-    });
-
-    // Incoming call
-    peer.on('call', async (call) => {
-      statusSpan.textContent = 'Incoming call… answering';
-      currentCall = call;
-      hangBtn.disabled = false;
-
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        call.answer(localStream);
-
-        call.on('stream', (remoteStream) => {
-          remoteAudio.srcObject = remoteStream;
-          statusSpan.textContent = 'In call';
-          speakerBtn.disabled = false;
-        });
-
-        call.on('close', endCall);
-      } catch (err) {
-        console.error(err);
-        statusSpan.textContent = 'Mic permission denied';
+    // Apply ID button
+    setIdBtn.onclick = () => {
+      const newId = myIdInput.value.trim();
+      if (!newId) {
+        alert("Enter your ID first!");
+        return;
       }
-    });
+
+      // Destroy old peer if exists
+      if (peer) peer.destroy();
+
+      peer = new Peer(newId); // <-- constant ID chosen by user
+      myIdSpan.textContent = newId;
+      statusSpan.textContent = "Connecting...";
+
+      // When ready
+      peer.on("open", () => {
+        statusSpan.textContent = "Ready";
+        callBtn.disabled = false;
+      });
+
+      // Incoming call
+      peer.on("call", async (call) => {
+        statusSpan.textContent = "Incoming call… answering";
+        currentCall = call;
+        hangBtn.disabled = false;
+
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          call.answer(localStream);
+
+          call.on("stream", (remoteStream) => {
+            remoteAudio.srcObject = remoteStream;
+            statusSpan.textContent = "In call";
+            speakerBtn.disabled = false;
+          });
+
+          call.on("close", endCall);
+        } catch {
+          statusSpan.textContent = "Mic permission denied";
+        }
+      });
+
+      // Error
+      peer.on("error", (err) => {
+        statusSpan.textContent = "Error: " + err.type;
+      });
+    };
 
     // Outgoing call
     callBtn.onclick = async () => {
       const otherId = otherIdInput.value.trim();
       if (!otherId) {
-        alert('Enter other person ID!');
+        alert("Enter other person ID!");
         return;
       }
 
-      statusSpan.textContent = 'Calling ' + otherId + '…';
+      statusSpan.textContent = "Calling " + otherId + "…";
 
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -95,16 +120,15 @@
         currentCall = call;
         hangBtn.disabled = false;
 
-        call.on('stream', (remoteStream) => {
+        call.on("stream", (remoteStream) => {
           remoteAudio.srcObject = remoteStream;
-          statusSpan.textContent = 'In call';
+          statusSpan.textContent = "In call";
           speakerBtn.disabled = false;
         });
 
-        call.on('close', endCall);
-      } catch (err) {
-        console.error(err);
-        statusSpan.textContent = 'Mic permission denied / error';
+        call.on("close", endCall);
+      } catch {
+        statusSpan.textContent = "Mic error";
       }
     };
 
@@ -115,7 +139,7 @@
     };
 
     function endCall() {
-      statusSpan.textContent = 'Call ended';
+      statusSpan.textContent = "Call ended";
       hangBtn.disabled = true;
       speakerBtn.disabled = true;
       remoteAudio.srcObject = null;
@@ -127,17 +151,12 @@
       currentCall = null;
     }
 
-    // Speaker toggle (mute/unmute remote sound)
+    // Speaker toggle
     speakerBtn.onclick = () => {
       speakerOn = !speakerOn;
       remoteAudio.muted = !speakerOn;
-      speakerBtn.textContent = speakerOn ? '🔊 Speaker: ON' : '🔇 Speaker: OFF';
+      speakerBtn.textContent = speakerOn ? "🔊 Speaker: ON" : "🔇 Speaker: OFF";
     };
-
-    peer.on('error', (err) => {
-      console.error(err);
-      statusSpan.textContent = 'Error: ' + err.type;
-    });
   </script>
 </body>
 </html>
